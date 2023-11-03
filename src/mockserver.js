@@ -14,8 +14,26 @@ const xmlConsoleList = `<?xml version="1.0" encoding="UTF-8"?>
 <root>
     <list>
         <item>
-          <name>A</name>
+			<id>0x00000002</id><name>A</name>
         </item>
+    </list>
+</root>`
+
+const xmlCpuList = `<?xml version="1.0" encoding="UTF-8"?>
+<root>
+    <list>
+        <item>
+			<id>0x00000001</id><name>A</name>
+		</item>
+    </list>
+</root>`
+
+const xmlVtCpuList = `<?xml version="1.0" encoding="UTF-8"?>
+<root>
+    <list>
+        <item>
+			<id>0x00000002</id><name>A</name>
+		</item>
     </list>
 </root>`
 

@@ -26,47 +26,53 @@ class PAWInstance extends InstanceBase {
 				this.updateStatus(InstanceStatus.Ok)
 				fs.readFile(this.config.config_file, 'utf-8', (err, data) => {
 					if (err) {
-						this.log('error', `Error reading config file: ${err.toString()}`)
+						this.log('error', `Error reading config file: ${err}`)
 						return
 					}
 					this.log('Debug', 'Read Data from file: ' + data.toString())
-					let mydata = JSON.parse(data.toString())
+					let saved_consoles = JSON.parse(data.toString())
 
-					if (mydata.consoles) {
+					if (saved_consoles.consoles) {
 						this.log('Debug', 'Consoles:')
-						for (let item of mydata.consoles) {
+						for (let item of saved_consoles.consoles) {
 							this.log('debug', 'ID: ' + item.id + ', Name: ' + item.label)
 						}
 					} else {
-						mydata.consoles = []
+						saved_consoles.consoles = []
 					}
 
 					this.getConnectedConsoles()
-						.then((consoles) => {
-							for (let item of consoles) {
+						.then((connected_consoles) => {
+							for (let connected_console of connected_consoles) {
 								let a = 0
-								let b = 0
-								for (let known_item of mydata.consoles) {
-									if (item.label == known_item.label) {
+								for (let saved_console of saved_consoles.consoles) {
+									this.log('info', 'Test. ID: ' + saved_console.id + ', Name: ' + saved_console.label)
+									if ((connected_consoles.label == saved_console.label) && (connected_consoles.id == saved_console.id)) {
+										this.log('info', 'Console already registered, ID: ' + saved_console.id + ', Name: ' + saved_console.label)
+										a = 1
+									} else if (connected_consoles.label == saved_console.label) {
+										this.log('info', 'Console name already registered, ID: ' + saved_console.id + ', Name: ' + saved_console.label)
+										a = 1
+									} else if (connected_consoles.id == saved_console.id) {
+										this.log('info', 'Console ID already registered, ID: ' + saved_console.id + ', Name: ' + saved_console.label)
 										a = 1
 									}
-									b = b + 1
 								}
 								if (a == 0) {
-									this.log('info', 'New Console. ID: ' + b + ', Name: ' + item.label)
-									mydata.consoles.push({ id: [b], label: item.label })
+									this.log('info', 'New Console. ID: ' + connected_console.id + ', Name: ' + connected_console.label)
+									saved_consoles.consoles.push({ id: [connected_console.id], label: connected_console.label })
 								}
 							}
-							this.consoles = mydata.consoles
+							this.consoles = saved_consoles.consoles
 							this.updateActions()
-							fs.writeFile(this.config.config_file, JSON.stringify(mydata), (err, data) => {
+							fs.writeFile(this.config.config_file, JSON.stringify(saved_consoles), (err, data) => {
 								if (err) {
-									this.log('error', `Error writing config file: ${err.toString()}`)
+									this.log('error', `Error writing config file: ${err}`)
 								}
 							})
 						})
 						.catch((err) => {
-							this.log('error', `Error getting connected consoles: ${err.toString()}`)
+							this.log('error', `Error getting connected consoles: ${err}`)
 						})
 				})
 			})
@@ -126,6 +132,7 @@ class PAWInstance extends InstanceBase {
 			setTimeout(() => {
 				if (answer == '') {
 					reject()
+					console.log('Answer invalid')
 				} else {
 					resolve(answer)
 				}
@@ -141,24 +148,21 @@ class PAWInstance extends InstanceBase {
 			this.sendAction(xml_get.replace('target', '<DviConsole/>'))
 				.then((answer) => {
 					this.log('debug', 'Connected Consoles:')
+					this.log(answer)
 					let items = answer.split('<item>')
-					let unsorted_consoles = []
+					let connected_consoles = []
 					for (let item of items) {
 						if (item.includes('<name>')) {
-							unsorted_consoles.push(item.split('<name>')[1].split('</name>')[0])
+							let id = item.split('<id>')[1].split('</id>')[0]
+							let label = item.split('<name>')[1].split('</name>')[0]
+							connected_consoles.push({ id: [id], label: [label] })
+							this.log('debug', 'ID: ' + id + ', Name: ' + item)
 						}
-					}
-					let connected_consoles = []
-					let ID = 0
-					for (let item of unsorted_consoles) {
-						connected_consoles.push({ id: [ID], label: item })
-						this.log('debug', ID + ': ' + item)
-						ID = ID + 1
 					}
 					resolve(connected_consoles)
 				})
-				.catch(() => {
-					reject()
+				.catch((err) => {
+					reject(err)
 				})
 		})
 	}
