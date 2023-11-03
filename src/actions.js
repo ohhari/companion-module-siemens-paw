@@ -1,4 +1,4 @@
-import { xml_get, xml_push } from './xml'
+import { xml_get, xml_push } from './xml.js'
 
 export default function (instance) {
 	return {
