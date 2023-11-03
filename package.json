@@ -4,7 +4,8 @@
 	"main": "src/index.js",
 	"type": "module",
 	"scripts": {
-		"format": "prettier -w ."
+		"format": "prettier -w .",
+		"mockserver": "node ./src/mockserver.js"
 	},
 	"license": "MIT",
 	"repository": {
