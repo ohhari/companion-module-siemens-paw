@@ -2,6 +2,7 @@ import { InstanceBase, InstanceStatus, Regex, runEntrypoint } from '@companion-m
 import { getActions } from './actions.js'
 import { getVariables, setVariable } from './variables.js'
 import { Socket } from 'net';
+import * as fs from 'fs'
 
 const xml_get = `<?xml version="1.0" encoding="UTF-8"?>
 <root>
@@ -13,13 +14,16 @@ const xml_get = `<?xml version="1.0" encoding="UTF-8"?>
 class PAWInstance extends InstanceBase {
 	constructor(internal) {
 		super(internal)
+		this.checkMatrix = this.checkMatrix.bind(this)
+		this.getConnectedConsoles = this.getConnectedConsoles.bind(this)
+		this.sendAction = this.sendAction.bind(this)
+		//this.getActions = getActions.bind(this)
+
 	}
 
 	async init(config) {
-
-		let c = this
 		this.config = config
-		this.consoles = { id: 0, Name: 'no consoles loaded yet' }
+		this.consoles = { id: 0, label: 'no consoles loaded yet' }
 		this.updateStatus(InstanceStatus.Connecting)
 		//this.updateStatus(InstanceStatus.Ok)
 		this.updateActions()
@@ -28,29 +32,57 @@ class PAWInstance extends InstanceBase {
 		this.checkMatrix(this)
 		.then(() => {
 			this.log('info', 'Matrix found')
-			this.updateStatus(InstanceStatus.Ok)	
+			this.updateStatus(InstanceStatus.Ok)
+			let known_consoles = []
+			fs.readFile(this.config.config_file, 'utf-8', function (err, data) {
+				if (err){
+					this.log('error', err.toString()) 
+			} else {
+					this.log('Debug', 'Read Data from file: ' + data.toString())
+					var mydata = JSON.parse(data.toString())
+					this.log('Debug','Consoles:')
+					for (let item of mydata.consoles) {
+						this.log('debug', "ID: " + item.id + ', Name: ' + item.label)
+					}
+					
+					this.getConnectedConsoles(this)
+					.then((consoles) => {
+						for (let item of consoles) {
+							let a = 0
+							let b = 0
+							for (let known_item of mydata.consoles) {
+								if (item.label == known_item.label){
+									a = 1
+								}
+								b = b + 1
+							}
+							if (a == 0){
+								this.log('info', 'New Console. ID: ' + b + ', Name: ' + item.label)
+								mydata.consoles.push({id : [b], label : item.label})
+							}
+						}
+						this.consoles = mydata.consoles
+						this.updateActions()
+						fs.writeFile(this.config.config_file, JSON.stringify(mydata), function (err, data) {
+							if (err){
+								this.log('error', err.toString()) 
+							}
+						}.bind(this))
+					})
+					.catch((err) => {
+						this.log('error', err.toString())		
+					})					
+				}
+
+				
+			}.bind(this));
+
+
 		})
 		.catch((err) => {
 			this.log('error', err)
 			this.updateStatus(InstanceStatus.ConnectionFailure)				
 		})
-
-
-
-		/*this.getAllDataFromMatrix().then(() => {
-
-			instance.consoles =
-			this.log('info', 'Daten von Matrix geladen')
-			//console.log(this.consoles)
-			this.updateStatus(InstanceStatus.Ok)
-			this.updateActions()
-			this.updateVariables()
-			/*const fs = require('fs')
-				fs.readFile(this.config.config_file, (err, inputD) => {
-				if (err) throw err;
-			   console.log(inputD.toString());
-		 	})
-		})*/
 
 	}
 	async destroy() {
@@ -75,36 +107,35 @@ class PAWInstance extends InstanceBase {
 		this.config = config
 	}
 
-	async sendAction(instance, xml){
+	async sendAction(xml){
 		return new Promise ((resolve, reject) => {
 				var client = new Socket()
 				var answer = ""
-
+	
 				client.connect(
-					instance.config.matrix_port,
-					instance.config.matrix_ip,
+					this.config.matrix_port,
+					this.config.matrix_ip,
 					async function() {
 						client.write(xml)
-						instance.log('debug', 'Connected....')
-					}
+						this.log('debug', 'Connected....')
+					}.bind(this)
 				);
 	
 				client.on('data', async function(data) {
 					data = data.toString().replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">").replace('&quot;', '"').replace('&#39;', "'").replace('&#x2F;', "/").replace('&apos;', "'")
-					instance.log('debug', 'Received ' + data.length + ' bytes\n' + data)
+					this.log('debug', 'Received ' + data.length + ' bytes\n' + data)
 					answer = answer + data
-	
-				});  
+				}.bind(this))
 
 				client.on('close', async function() {
 					client.destroy()
-					instance.log('debug','Connection closed...')
-				})
+					this.log('debug','Connection closed...')
+				}.bind(this))
 
 				client.on('error', async function() {
 					client.destroy()
-					instance.log('debug','Connection closed...')
-				})
+					this.log('debug','Connection closed...')
+				}.bind(this))
 
 				setTimeout(function() {
 					if (answer == '') {
@@ -116,14 +147,14 @@ class PAWInstance extends InstanceBase {
 		});
 	}
 
-	async getConnectedConsoles(instance) {
+	async getConnectedConsoles() {
 		return new Promise ((resolve, reject) => {
-			instance.log('debug', 'Get all connected Consoles')
-			instance.log('debug', 'XML: ' + xml_get.replace('target','<DviConsole/>'))
+			this.log('debug', 'Get all connected Consoles')
+			this.log('debug', 'XML: ' + xml_get.replace('target','<DviConsole/>'))
 
-			instance.sendAction(instance, xml_get.replace('target','<DviConsole/>'))
+			this.sendAction(xml_get.replace('target','<DviConsole/>'))
 			.then((answer) => {
-				instance.log('debug','Connected Consoles:')
+				this.log('debug','Connected Consoles:')
 				let items = answer.split("<item>")
 				let unsorted_consoles = []
 				for (let item of items) {
@@ -137,7 +168,7 @@ class PAWInstance extends InstanceBase {
 				var ID = 0
 				for (let item of unsorted_consoles) {//.sort()
 						connected_consoles.push({id : [ID], label : item})
-						instance.log('debug', ID + ": " + item);
+						this.log('debug', ID + ": " + item);
 						ID = ID + 1
 
 				} 
@@ -175,13 +206,13 @@ class PAWInstance extends InstanceBase {
 		]
 	}
 
-	async checkMatrix(instance){
+	async checkMatrix(){
 		return new Promise ((resolve, reject) => {
-			instance.log('debug', 'Check connection to Matrix')
-			instance.log('debug', 'XML: ' + xml_get.replace('target','<DviMatrixSwitch/>'))
-			instance.sendAction(instance, xml_get.replace('target','<DviConsole/>'))
+			this.log('debug', 'Check connection to Matrix')
+			this.log('debug', 'XML: ' + xml_get.replace('target','<DviMatrixSwitch/>'))
+			this.sendAction(xml_get.replace('target','<DviConsole/>'))
 			.then((answer) => {
-				instance.log('debug', answer.split("<name>")[1].split("</name>")[0])
+				this.log('debug', answer.split("<name>")[1].split("</name>")[0])
 				if (answer.split("<name>")[1].split("</name>")[0] != '') {
 					resolve()
 				} else {
