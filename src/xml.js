@@ -20,8 +20,8 @@ const xmlConnectionList = `<?xml version="1.0" encoding="UTF-8"?>
 <root>
     <list>
         <item>
-          <cpuName>A</cpuName>
-          <consoleName>B</consoleName>
+          <cpuName>CPU_A</cpuName>
+          <consoleName>Console_A</consoleName>
         </item>
     </list>
 </root>`

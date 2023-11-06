@@ -55,17 +55,18 @@ export default function (instance) {
 				let sel_console_id = event.options.console
 				let sel_cpu_label = ""
 				let sel_console_label = ""
-				let vt = 0	
+				let vt = 0
+
+				if (sel_cpu_id == '0') {
+					sel_cpu_id = instance.getVariableValue('selectedCPU')
+				}
+				if (sel_cpu_id == '1') {
+					sel_cpu_id = instance.getVariableValue('requestedCPU')
+				}
 
 				for (let cpu of instance.cpus) {
 					if (sel_cpu_id == cpu.id) {
 						sel_cpu_label = cpu.label
-						if (cpu.label == "-Selected CPU") {
-							sel_cpu_label = instance.getVariableValue('selectedCPU')
-						}
-						if (cpu.label == "-Requested CPU") {
-							sel_cpu_label = instance.getVariableValue('requestedCPU')
-						}
 						if (cpu.type == 'Vt') {
 							vt = 1
 						}	
@@ -96,8 +97,8 @@ export default function (instance) {
 								instance.log('info', answer.replace('<commandStatus>', '').replace('</commandStatus>', ''))
 							}
 						})
-						.catch(() => {
-							instance.log('error', 'Connection failure')
+						.catch((err) => {
+							instance.log('error', 'Error while pushing CPU to Console: ' + err.toString())
 						})
 				} else {
 					instance.log('error', 'No CPU selected')
@@ -162,7 +163,7 @@ export default function (instance) {
 				},
 			],
 			callback: async (event) => {
-				console.log('Get CPU from Console %s', event.options.console)
+				console.log('Request CPU from Console %s', event.options.console)
 				instance
 					.sendAction(xml_get.replace('target', '<MatrixConnectionList/>'))
 					.then((answer) => {
@@ -186,8 +187,8 @@ export default function (instance) {
 							instance.log('warn', 'Console has no connection')
 						}
 					})
-					.catch(() => {
-						instance.log('error', 'Connection failure')
+					.catch((err) => {
+						instance.log('error', 'Error while requesting CPU from Console: ' + err.toString())
 					})
 			},
 		},

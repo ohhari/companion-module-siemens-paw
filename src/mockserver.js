@@ -1,12 +1,11 @@
 import { createServer } from 'net'
 import { xmlConnectionList, xmlConsoleList, xmlCpuList, xmlVtCpuList, xmlMatrixList, xmlConnect } from './xml.js'
 
-let debuglevel = 1
+//Start mockserver with yarn run mockserver
 
 createServer((socket) => {
 	function writeToSocket(data) {
 		socket.write(Buffer.from(data, 'utf-8').toString())
-		//console.log(`Sending data: ${data.toString()}`)
 	}
 
 	socket.on('connection', () => {
@@ -16,7 +15,6 @@ createServer((socket) => {
 	socket.on('data', (data) => {
 		if (data.includes('<connect>')) {
 			console.log('responding to connect')
-			if (debuglevel == 1) {console.log(xmlConnect)}
 			writeToSocket(xmlConnect)
 			return
 		}
@@ -36,7 +34,6 @@ createServer((socket) => {
 				answer = answer + xmlVtCpuList
 			}
 			answer = answer + `</result></root>`
-			console.log(answer)
 			writeToSocket(answer)
 			return
 		}

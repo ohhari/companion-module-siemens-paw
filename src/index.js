@@ -17,6 +17,7 @@ class PAWInstance extends InstanceBase {
 		this.cpus = { id: 0, label: 'no cpus loaded yet', type: 'none' }
 
 		this.updateStatus(InstanceStatus.Connecting)
+		this.log('info', 'Initiate startup...')
 
 		this.updateActions()
 		this.updateVariables()
@@ -30,13 +31,13 @@ class PAWInstance extends InstanceBase {
 						this.checkConfig(saved_data, connected_data)
 						this.log('info', 'Config loaded')
 						this.updateActions()
+						this.log('info', 'Startup finished')
 					})
-					.catch((err) => {
-						this.log('error', `Error loading config: ${err}`)
+					.catch(() => {
+						this.updateStatus(InstanceStatus.BadConfig)
 					})
 			})
-			.catch((err) => {
-				this.log('error', `Error checking matrix: ${err}`)
+			.catch(() => {
 				this.updateStatus(InstanceStatus.ConnectionFailure)
 			})
 	}
@@ -45,17 +46,25 @@ class PAWInstance extends InstanceBase {
 	}
 
 	updateActions() {
-		this.log('debug', 'update actions....')
+		this.log('debug', 'Updating actions...')
 		this.setActionDefinitions(getActions(this))
 	}
 
 	updateVariables() {
-		this.log('debug', 'update variables....')
+		this.log('debug', 'Updating variables...')
 		this.setVariableDefinitions(getVariables(this))
 	}
 
 	setVariable(variableIdent, variableValue) {
 		this.setVariableValues({ [variableIdent]: variableValue })
+	}
+
+	getConsolefromID () {
+
+	}
+
+	getCPUfromID () {
+
 	}
 
 	async configUpdated(config) {
@@ -68,30 +77,32 @@ class PAWInstance extends InstanceBase {
 			let answer = ''
 
 			client.connect(this.config.matrix_port, this.config.matrix_ip, async () => {
+				this.log('debug', 'Connect to Server...')
 				client.write(xml)
-				this.log('debug', 'Connected....')
+				//this.log('debug', 'Send xml to Server...')
+				//this.log('debug', 'Send: ' + xml)
 			})
 
 			client.on('data', async (data) => {
 				data = decodeURIComponent(data.toString())
-				this.log('debug', 'Received ' + data.length + ' bytes\n' + data)
+				//this.log('debug', 'Received: ' + data.length + ' bytes\n' + data)
 				answer = answer + data
 			})
 
 			client.on('close', async () => {
 				client.destroy()
-				this.log('debug', 'Connection closed...')
+				this.log('debug', 'Connection to Server closed...')
 			})
 
 			client.on('error', async () => {
 				client.destroy()
-				this.log('debug', 'Connection closed...')
+				reject('Connection error')
+				this.log('debug', 'Connection to Server closed...')
 			})
 
 			setTimeout(() => {
 				if (answer == '') {
-					reject()
-					console.log('Answer invalid')
+					reject('No answer from server')
 				} else {
 					resolve(answer)
 				}
@@ -100,7 +111,7 @@ class PAWInstance extends InstanceBase {
 	}
 
 	getConfigFields() {
-		this.log('debug', 'getting config....')
+		this.log('debug', 'Getting config fields...')
 		return [
 			{
 				type: 'textinput',
@@ -127,30 +138,32 @@ class PAWInstance extends InstanceBase {
 
 	async checkMatrix() {
 		return new Promise((resolve, reject) => {
-			this.log('debug', 'Check connection to Matrix')
-			this.log('debug', 'XML: ' + xml_get.replace('target', '<DviMatrixSwitch/><DviConsole/><DviCpu/><VtCpu/>'))
+			this.log('debug', 'Checking connection to Matrix...')
 			this.sendAction(xml_get.replace('target', '<DviMatrixSwitch/><DviConsole/><DviCpu/><VtCpu/>'))
 				.then((answer) => {					
-					if (answer.split('<DviMatrixSwitch>')[1].split('<DviMatrixSwitch>')[0] != '') {
+					if (answer.split('<DviMatrixSwitch>')[1].split('<DviMatrixSwitch>')[0].split('<name>')[1].split('</name>')[0] != '') {
 						this.log('info', 'Connected to Matrix ' + answer.split('<DviMatrixSwitch>')[1].split('</DviMatrixSwitch>')[0].split('<name>')[1].split('</name>')[0])
 						resolve(answer)
 					} else {
-						reject('No valid Matrix')
+						this.log('error', 'Error while checking matrix: No valid matrix name')
+						reject()
 					}
 				})
-				.catch(() => {
-					reject('Connection failure')
+				.catch((err) => {
+					this.log('error', 'Error while checking matrix: ' + err.toString())
+					reject()
 				})
 		})
 	}
 
 	async loadConfig() {
 		return new Promise((resolve, reject) => {
+			this.log('info', 'Loading config file...')
 			fs.readFile(this.config.config_file, 'utf-8', (err, data) => {
 				let saved_data = {}
 				if (err) {
-					this.log('error', `Error reading config file: ${err}`)
-					reject(err)
+					this.log('error','Error reading config file: ' + err.toString())
+					reject()
 				} else if (data == 0){
 					this.log('debug', `Config file is empty`)
 					saved_data = JSON.parse('{"consoles":[],"cpus":[]}')
@@ -167,7 +180,8 @@ class PAWInstance extends InstanceBase {
 	}
 
 	async checkConfig(saved_data, connected_data) {
-		this.log('debug', 'Connected Devices:')
+		this.log('debug', 'Compare connected Devices to config...')
+		//this.log('debug', 'Connected Devices:')
 		let connected_consoles = []
 		let connected_cpus = []
 		for (let item of connected_data.split('<item>')) {
@@ -229,7 +243,7 @@ class PAWInstance extends InstanceBase {
 		this.cpus = saved_data.cpus
 		fs.writeFile(this.config.config_file, JSON.stringify(saved_data), (err, data) => {
 			if (err) {
-				this.log('error', `Error writing config file: ${err}`)
+				this.log('error', 'Error writing config file: ' + err.toString())
 			}
 		})
 	}
