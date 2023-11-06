@@ -55,27 +55,16 @@ export default function (instance) {
 				let sel_console_id = event.options.console
 				let sel_cpu_label = ""
 				let sel_console_label = ""
-				let vt = 0
-				console.log(instance.cpus)
+				let vt = 0	
 
-				for (let cpu in instance.cpus) {
-					console.log(cpu.id)
+				for (let cpu of instance.cpus) {
 					if (sel_cpu_id == cpu.id) {
 						sel_cpu_label = cpu.label
-						instance.log('error', sel_cpu_label)
-						if (cpu.label == "_ Selected CPU") {
-							try {
-								sel_cpu_label = instance.getVariableValue('sel_cpu')
-							} catch (err) {
-								instance.log('error', `Error while getting variable sel_cpu: ${err}`)
-							}
+						if (cpu.label == "-Selected CPU") {
+							sel_cpu_label = instance.getVariableValue('selectedCPU')
 						}
-						if (cpu.label == "_ Requested CPU") {
-							try {
-								sel_cpu_label = instance.getVariableValue('req_cpu')
-							} catch (err) {
-								instance.log('error', `Error while getting variable req_cpu: ${err}`)
-							}
+						if (cpu.label == "-Requested CPU") {
+							sel_cpu_label = instance.getVariableValue('requestedCPU')
 						}
 						if (cpu.type == 'Vt') {
 							vt = 1
@@ -83,53 +72,71 @@ export default function (instance) {
 						break
 					}
 				}
-				for (let console in instance.consoles) {
+				for (let console of instance.consoles) {
 					if (sel_console_id == console.id) {
 						sel_console_label = console.label
 						break
 					}
 				}
-				console.log('Push CPU %s to Console %s', sel_cpu_label, sel_console_label)
-				let xml = xml_push.replace('target_console', sel_console_label).replace('target_cpu', sel_cpu_label)
-				if (vt == 1) {
-					xml = xml.replace('<DviCpu type="name">', '<VtCpu type="name">').replace('</DviCpu>', '</VtCpu>')
-				}	
-				instance.log('debug', 'XML: ' + xml)
-
-				instance
-					.sendAction(xml)
-					.then((answer) => {
-						answer = answer.replace('&apos;', "'").split('<result type="connect">')[1].split('</result>')[0]
-						if (answer.includes('<Warning>')) {
-							instance.log('warn', answer.replace('<Warning>', '').replace('</Warning>', ''))
-						} else if (answer.includes('<Error>')) {
-							instance.log('error', answer.replace('<Error>', '').replace('</Error>', ''))
-						} else {
-							instance.log('info', answer.replace('<commandStatus>', '').replace('</commandStatus>', ''))
-						}
-					})
-					.catch(() => {
-						instance.log('error', 'Connection failure')
-					})
+				
+				if (sel_cpu_label != '') {
+					console.log('Push CPU %s to Console %s', sel_cpu_label, sel_console_label)
+					let xml = xml_push.replace('target_console', sel_console_label).replace('target_cpu', sel_cpu_label)
+					if (vt == 1) {
+						xml = xml.replace('<DviCpu type="name">', '<VtCpu type="name">').replace('</DviCpu>', '</VtCpu>')
+					}	
+					instance.sendAction(xml)
+						.then((answer) => {
+							answer = answer.replace('&apos;', "'").split('<result type="connect">')[1].split('</result>')[0]
+							if (answer.includes('<Warning>')) {
+								instance.log('warn', answer.replace('<Warning>', '').replace('</Warning>', ''))
+							} else if (answer.includes('<Error>')) {
+								instance.log('error', answer.replace('<Error>', '').replace('</Error>', ''))
+							} else {
+								instance.log('info', answer.replace('<commandStatus>', '').replace('</commandStatus>', ''))
+							}
+						})
+						.catch(() => {
+							instance.log('error', 'Connection failure')
+						})
+				} else {
+					instance.log('error', 'No CPU selected')
+				}
 			},
 		},
-		set_selected_cpu: {
-			name: 'Set selected CPU',
+		selectCPU: {
+			name: 'Select CPU',
 			options: [
 				{
+					type: 'dropdown',
+					label: 'Select CPU',
 					id: 'cpu',
-					type: 'textinput',
-					label: 'CPU',
-					default: '',
+					default: '0',
+					tooltip: 'Select CPU',
+					choices: Object.keys(instance.cpus)
+						.map((key) => ({
+							id: instance.cpus[key].id,
+							label: instance.cpus[key].label,
+						}))
+						.sort((a, b) => {
+							if (a.label < b.label) {
+								return -1
+							}
+							if (a.label > b.label) {
+								return 1
+							}
+							return 0
+						}),
+					minChoicesForSearch: 5,
 				},
 			],
 			callback: async (event) => {
 				console.log('Set selected CPU: ' + event.options.cpu)
-				instance.setVariable('sel_cpu', event.options.cpu)
+				instance.setVariable('selectedCPU', event.options.cpu)
 			},
 		},
-		getCPUfromConsole: {
-			name: 'Get CPU from Console',
+		requestCPUfromConsole: {
+			name: 'Request CPU from Console',
 			options: [
 				{
 					type: 'dropdown',
@@ -156,8 +163,6 @@ export default function (instance) {
 			],
 			callback: async (event) => {
 				console.log('Get CPU from Console %s', event.options.console)
-				instance.log('debug', 'XML: ' + xml_get.replace('target', '<MatrixConnectionList/>'))
-
 				instance
 					.sendAction(xml_get.replace('target', '<MatrixConnectionList/>'))
 					.then((answer) => {
@@ -172,7 +177,7 @@ export default function (instance) {
 								let matrix_console = item.split('<consoleName>')[1].split('</consoleName>')[0]
 								if (event.options.console == matrix_console) {
 									console.log('Target CPU: ' + matrix_cpu)
-									instance.setVariable('req_cpu', matrix_cpu)
+									instance.setVariable('requestedCPU', matrix_cpu)
 									a = 1
 								}
 							}

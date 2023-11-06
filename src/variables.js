@@ -1,6 +1,6 @@
 export default function (instance) {
 	return [
-		{ variableId: 'req_cpu', name: 'Requested CPU' },
-		{ variableId: 'sel_cpu', name: 'Selected CPU' },
+		{ variableId: 'requestedCPU', name: 'Requested CPU' },
+		{ variableId: 'selectedCPU', name: 'Selected CPU' },
 	]
 }

@@ -154,8 +154,8 @@ class PAWInstance extends InstanceBase {
 				} else if (data == 0){
 					this.log('debug', `Config file is empty`)
 					saved_data = JSON.parse('{"consoles":[],"cpus":[]}')
-					saved_data.cpus.push({ id : "0", label : "_ Selected CPU", type : "Dvi" })
-					saved_data.cpus.push({ id : "1", label : "_ Requested CPU", type : "Dvi" })
+					saved_data.cpus.push({ id : "0", label : "-Selected CPU", type : "Dvi" })
+					saved_data.cpus.push({ id : "1", label : "-Requested CPU", type : "Dvi" })
 					resolve(saved_data)
 				} else {
 					this.log('debug', 'Read Data from file')
