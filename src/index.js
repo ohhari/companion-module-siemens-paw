@@ -14,70 +14,29 @@ class PAWInstance extends InstanceBase {
 		this.config = config
 
 		this.consoles = { id: 0, label: 'no consoles loaded yet' }
+		this.cpus = { id: 0, label: 'no cpus loaded yet', type: 'none' }
 
 		this.updateStatus(InstanceStatus.Connecting)
 
 		this.updateActions()
 		this.updateVariables()
 
+		this.log('info', 'Connecting to Matrix...')
 		this.checkMatrix()
-			.then(() => {
-				this.log('info', 'Matrix found')
+			.then((connected_data) => {
 				this.updateStatus(InstanceStatus.Ok)
-				fs.readFile(this.config.config_file, 'utf-8', (err, data) => {
-					if (err) {
-						this.log('error', `Error reading config file: ${err}`)
-						return
-					}
-					this.log('Debug', 'Read Data from file: ' + data.toString())
-					let saved_consoles = JSON.parse(data.toString())
-
-					if (saved_consoles.consoles) {
-						this.log('Debug', 'Consoles:')
-						for (let item of saved_consoles.consoles) {
-							this.log('debug', 'ID: ' + item.id + ', Name: ' + item.label)
-						}
-					} else {
-						saved_consoles.consoles = []
-					}
-
-					this.getConnectedConsoles()
-						.then((connected_consoles) => {
-							for (let connected_console of connected_consoles) {
-								let a = 0
-								for (let saved_console of saved_consoles.consoles) {
-									this.log('info', 'Test. ID: ' + saved_console.id + ', Name: ' + saved_console.label)
-									if ((connected_consoles.label == saved_console.label) && (connected_consoles.id == saved_console.id)) {
-										this.log('info', 'Console already registered, ID: ' + saved_console.id + ', Name: ' + saved_console.label)
-										a = 1
-									} else if (connected_consoles.label == saved_console.label) {
-										this.log('info', 'Console name already registered, ID: ' + saved_console.id + ', Name: ' + saved_console.label)
-										a = 1
-									} else if (connected_consoles.id == saved_console.id) {
-										this.log('info', 'Console ID already registered, ID: ' + saved_console.id + ', Name: ' + saved_console.label)
-										a = 1
-									}
-								}
-								if (a == 0) {
-									this.log('info', 'New Console. ID: ' + connected_console.id + ', Name: ' + connected_console.label)
-									saved_consoles.consoles.push({ id: [connected_console.id], label: connected_console.label })
-								}
-							}
-							this.consoles = saved_consoles.consoles
-							this.updateActions()
-							fs.writeFile(this.config.config_file, JSON.stringify(saved_consoles), (err, data) => {
-								if (err) {
-									this.log('error', `Error writing config file: ${err}`)
-								}
-							})
-						})
-						.catch((err) => {
-							this.log('error', `Error getting connected consoles: ${err}`)
-						})
-				})
+				this.loadConfig()
+					.then((saved_data) => {
+						this.checkConfig(saved_data, connected_data)
+						this.log('info', 'Config loaded')
+						this.updateActions()
+					})
+					.catch((err) => {
+						this.log('error', `Error loading config: ${err}`)
+					})
 			})
 			.catch((err) => {
-				this.log('error', `Error checking matrix: ${err.toString()}`)
+				this.log('error', `Error checking matrix: ${err}`)
 				this.updateStatus(InstanceStatus.ConnectionFailure)
 			})
 	}
@@ -140,33 +99,6 @@ class PAWInstance extends InstanceBase {
 		})
 	}
 
-	async getConnectedConsoles() {
-		return new Promise((resolve, reject) => {
-			this.log('debug', 'Get all connected Consoles')
-			this.log('debug', 'XML: ' + xml_get.replace('target', '<DviConsole/>'))
-
-			this.sendAction(xml_get.replace('target', '<DviConsole/>'))
-				.then((answer) => {
-					this.log('debug', 'Connected Consoles:')
-					this.log(answer)
-					let items = answer.split('<item>')
-					let connected_consoles = []
-					for (let item of items) {
-						if (item.includes('<name>')) {
-							let id = item.split('<id>')[1].split('</id>')[0]
-							let label = item.split('<name>')[1].split('</name>')[0]
-							connected_consoles.push({ id: [id], label: [label] })
-							this.log('debug', 'ID: ' + id + ', Name: ' + item)
-						}
-					}
-					resolve(connected_consoles)
-				})
-				.catch((err) => {
-					reject(err)
-				})
-		})
-	}
-
 	getConfigFields() {
 		this.log('debug', 'getting config....')
 		return [
@@ -196,12 +128,12 @@ class PAWInstance extends InstanceBase {
 	async checkMatrix() {
 		return new Promise((resolve, reject) => {
 			this.log('debug', 'Check connection to Matrix')
-			this.log('debug', 'XML: ' + xml_get.replace('target', '<DviMatrixSwitch/>'))
-			this.sendAction(xml_get.replace('target', '<DviConsole/>'))
-				.then((answer) => {
-					this.log('debug', answer.split('<name>')[1].split('</name>')[0])
-					if (answer.split('<name>')[1].split('</name>')[0] != '') {
-						resolve()
+			this.log('debug', 'XML: ' + xml_get.replace('target', '<DviMatrixSwitch/><DviConsole/><DviCpu/><VtCpu/>'))
+			this.sendAction(xml_get.replace('target', '<DviMatrixSwitch/><DviConsole/><DviCpu/><VtCpu/>'))
+				.then((answer) => {					
+					if (answer.split('<DviMatrixSwitch>')[1].split('<DviMatrixSwitch>')[0] != '') {
+						this.log('info', 'Connected to Matrix ' + answer.split('<DviMatrixSwitch>')[1].split('</DviMatrixSwitch>')[0].split('<name>')[1].split('</name>')[0])
+						resolve(answer)
 					} else {
 						reject('No valid Matrix')
 					}
@@ -209,6 +141,96 @@ class PAWInstance extends InstanceBase {
 				.catch(() => {
 					reject('Connection failure')
 				})
+		})
+	}
+
+	async loadConfig() {
+		return new Promise((resolve, reject) => {
+			fs.readFile(this.config.config_file, 'utf-8', (err, data) => {
+				let saved_data = {}
+				if (err) {
+					this.log('error', `Error reading config file: ${err}`)
+					reject(err)
+				} else if (data == 0){
+					this.log('debug', `Config file is empty`)
+					saved_data = JSON.parse('{"consoles":[],"cpus":[]}')
+					saved_data.cpus.push({ id : "0", label : "_ Selected CPU", type : "Dvi" })
+					saved_data.cpus.push({ id : "1", label : "_ Requested CPU", type : "Dvi" })
+					resolve(saved_data)
+				} else {
+					this.log('debug', 'Read Data from file')
+					saved_data = JSON.parse(data.toString())
+					resolve(saved_data)
+				}
+			})
+		})
+	}
+
+	async checkConfig(saved_data, connected_data) {
+		this.log('debug', 'Connected Devices:')
+		let connected_consoles = []
+		let connected_cpus = []
+		for (let item of connected_data.split('<item>')) {
+			if (item.includes('<cl>')) {
+				let device_type = item.split('<cl>')[1].split('</cl>')[0]
+				let device_id = item.split('<id>')[1].split('</id>')[0]
+				let device_label = item.split('<name>')[1].split('</name>')[0]
+				if (device_type == 'DviConsole') {
+					connected_consoles.push({ id : device_id, label : device_label })
+				} else if (device_type == 'DviCpu') {
+					connected_cpus.push({ id : device_id, label : device_label, type : 'Dvi' })
+				} else if (device_type == 'VtCpu') {
+					connected_cpus.push({ id : device_id, label : device_label, type : 'Vt' })
+				} else {
+					continue
+				}
+				//this.log('debug', 'Type: ' + device_type + ', ID: ' + device_id + ', Name: ' + device_label)
+			}
+		}
+		for (let connected_console of connected_consoles) {
+			let a = 0
+			for (let saved_console of saved_data.consoles) {
+				if ((connected_console.label == saved_console.label) && (connected_console.id == saved_console.id)) {
+					this.log('debug', 'Console already registered, ID: ' + saved_console.id + ', Name: ' + saved_console.label)
+					a = 1
+				} else if (connected_console.label == saved_console.label) {
+					this.log('info', 'Console name already registered, ID: ' + saved_console.id + ', Name: ' + saved_console.label)
+					a = 1
+				} else if (connected_console.id == saved_console.id) {
+					this.log('info', 'Console ID already registered, ID: ' + saved_console.id + ', Name: ' + saved_console.label)
+					a = 1
+				}
+			}
+			if (a == 0) {
+				this.log('info', 'New Console. ID: ' + connected_console.id + ', Name: ' + connected_console.label)
+				saved_data.consoles.push({ id : connected_console.id, label : connected_console.label })
+			}
+		}
+		for (let connected_cpu of connected_cpus) {
+			let a = 0
+			for (let saved_cpu of saved_data.cpus) {
+				if ((connected_cpu.label == saved_cpu.label) && (connected_cpu.id == saved_cpu.id)) {
+					this.log('debug', 'CPU already registered, ID: ' + saved_cpu.id + ', Name: ' + saved_cpu.label)
+					a = 1
+				} else if (connected_cpu.label == saved_cpu.label) {
+					this.log('info', 'CPU name already registered, ID: ' + saved_cpu.id + ', Name: ' + saved_cpu.label)
+					a = 1
+				} else if (connected_cpu.id == saved_cpu.id) {
+					this.log('info', 'CPU ID already registered, ID: ' + saved_cpu.id + ', Name: ' + saved_cpu.label)
+					a = 1
+				}
+			}
+			if (a == 0) {
+				this.log('info', 'New CPU. ID: ' + connected_cpu.id + ', Name: ' + connected_cpu.label)
+				saved_data.cpus.push({ id : connected_cpu.id, label : connected_cpu.label, type : connected_cpu.type })
+			}
+		}
+		this.consoles = saved_data.consoles
+		this.cpus = saved_data.cpus
+		fs.writeFile(this.config.config_file, JSON.stringify(saved_data), (err, data) => {
+			if (err) {
+				this.log('error', `Error writing config file: ${err}`)
+			}
 		})
 	}
 }

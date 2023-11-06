@@ -1,57 +1,7 @@
 import { createServer } from 'net'
+import { xmlConnectionList, xmlConsoleList, xmlCpuList, xmlVtCpuList, xmlMatrixList, xmlConnect } from './xml.js'
 
-const xmlConnectionList = `<?xml version="1.0" encoding="UTF-8"?>
-<root>
-    <list>
-        <item>
-          <cpuName>A</cpuName>
-          <consoleName>B</consoleName>
-        </item>
-    </list>
-</root>`
-
-const xmlConsoleList = `<?xml version="1.0" encoding="UTF-8"?>
-<root>
-    <list>
-        <item>
-			<id>0x00000002</id><name>A</name>
-        </item>
-    </list>
-</root>`
-
-const xmlCpuList = `<?xml version="1.0" encoding="UTF-8"?>
-<root>
-    <list>
-        <item>
-			<id>0x00000001</id><name>A</name>
-		</item>
-    </list>
-</root>`
-
-const xmlVtCpuList = `<?xml version="1.0" encoding="UTF-8"?>
-<root>
-    <list>
-        <item>
-			<id>0x00000002</id><name>A</name>
-		</item>
-    </list>
-</root>`
-
-const xmlMatrixList = `<?xml version="1.0" encoding="UTF-8"?>
-<root>
-    <list>
-        <item>
-          <name>Matrix</name>
-        </item>
-    </list>
-</root>`
-
-const xmlConnect = `<?xml version="1.0" encoding="utf-8"?>
-<root>
-    <result type="connect">
-        Connection successfull
-    </result>
-</root>`
+let debuglevel = 1
 
 createServer((socket) => {
 	function writeToSocket(data) {
@@ -66,25 +16,33 @@ createServer((socket) => {
 	socket.on('data', (data) => {
 		if (data.includes('<connect>')) {
 			console.log('responding to connect')
+			if (debuglevel == 1) {console.log(xmlConnect)}
 			writeToSocket(xmlConnect)
 			return
 		}
-
+		if (data.includes('<list>')) {
+			console.log('responding to list')
+			let answer = `<?xml version="1.0" encoding="utf-8"?><root><result type="list">`
+			if (data.includes('<DviMatrixSwitch/>')) {
+				answer = answer + xmlMatrixList
+			}
+			if (data.includes('<DviConsole/>')) {
+				answer = answer + xmlConsoleList
+			}	
+			if (data.includes('<DviCpu/>')) {
+				answer = answer + xmlCpuList
+			}	
+			if (data.includes('<VtCpu/>')) {
+				answer = answer + xmlVtCpuList
+			}
+			answer = answer + `</result></root>`
+			console.log(answer)
+			writeToSocket(answer)
+			return
+		}
 		if (data.includes('<MatrixConnectionList/>')) {
 			console.log('responding to connection list')
 			writeToSocket(xmlConnectionList)
-			return
-		}
-
-		if (data.includes('<DviConsole/>')) {
-			console.log('responding to console list')
-			writeToSocket(xmlConsoleList)
-			return
-		}
-
-		if (data.includes('<DviMatrix/>')) {
-			console.log('responding to matrix list')
-			writeToSocket(xmlMatrixList)
 			return
 		}
 	})
