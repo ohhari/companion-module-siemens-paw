@@ -1,8 +1,8 @@
 import { createServer } from 'net'
 import { xmlConnectionList, xmlConsoleList, xmlCpuList, xmlVtCpuList, xmlMatrixList, xmlConnect } from './xml.js'
 
-//Start mockserver with yarn run mockserver
-
+//Start the mockserver with "cmd>yarn run mockserver" from local directory
+//Creates a server that listens on the local socket and answers with a dummy answer to a request 
 createServer((socket) => {
 	function writeToSocket(data) {
 		socket.write(Buffer.from(data, 'utf-8').toString())
