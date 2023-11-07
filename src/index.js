@@ -12,8 +12,8 @@ class PAWInstance extends InstanceBase {
 	//Initiates the module
 	async init(config) {
 		this.config = config
-		this.consoles = { id : device_label, id: 0, label: 'no consoles loaded yet' }
-		this.cpus = { id : device_label, did: 0, label: 'no cpus loaded yet', type: 'none' }
+		this.consoles = { id : 0, did: 0, label: 'no consoles loaded yet' }
+		this.cpus = { id : 1, did: 0, label: 'no cpus loaded yet', type: 'none' }
 
 		this.updateStatus(InstanceStatus.Connecting)
 		this.log('info', 'Initiate startup...')
@@ -158,6 +158,8 @@ class PAWInstance extends InstanceBase {
 
 	//Gets devices from matrix and compares them to devices from the config list
 	async checkConfig(connected_data) {
+		let connected_consoles = []
+		let connected_cpus = []
 		this.log('debug', 'Loads connected devices...')
 		for (let item of connected_data.split('<item>')) {
 			if (item.includes('<cl>')) {
@@ -165,19 +167,21 @@ class PAWInstance extends InstanceBase {
 				let device_id = item.split('<id>')[1].split('</id>')[0]
 				let device_label = item.split('<name>')[1].split('</name>')[0]
 				if (device_type == 'DviConsole') {
-					this.consoles.push({ id : device_label, did : device_id, label : device_label })
+					connected_consoles.push({ id : device_label, did : device_id, label : device_label })
 				} else if (device_type == 'DviCpu') {
-					this.cpus.push({ id : device_label, did : device_id, label : device_label, type : 'Dvi' })
+					connected_cpus.push({ id : device_label, did : device_id, label : device_label, type : 'Dvi' })
 				} else if (device_type == 'VtCpu') {
-					this.cpus.push({ id : device_label, did : device_id, label : device_label, type : 'Vt' })
+					connected_cpus.push({ id : device_label, did : device_id, label : device_label, type : 'Vt' })
 				} else {
 					continue
 				}
 				this.log('debug', 'New device detected. Type: ' + device_type + ', ID: ' + device_id + ', Name: ' + device_label)
 			}
 		}
-		this.cpus.push({ id : 0, did : "0", label : "-Selected CPU", type : "Dvi" })
-		this.cpus.push({ id : 1, did : "1", label : "-Requested CPU", type : "Dvi" })
+		connected_cpus.push({ id : 0, did : "0", label : "-Selected CPU", type : "Dvi" })
+		connected_cpus.push({ id : 1, did : "1", label : "-Requested CPU", type : "Dvi" })
+		this.consoles = connected_consoles
+		this.cpus = connected_cpus
 	}
 }
 
