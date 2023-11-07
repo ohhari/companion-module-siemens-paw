@@ -13,6 +13,11 @@ createServer((socket) => {
 	})
 
 	socket.on('data', (data) => {
+		if (data.includes('<MatrixConnectionList/>')) {
+			console.log('responding to connection list')
+			writeToSocket(xmlConnectionList)
+			return
+		}
 		if (data.includes('<connect>')) {
 			console.log('responding to connect')
 			writeToSocket(xmlConnect)
@@ -35,11 +40,6 @@ createServer((socket) => {
 			}
 			answer = answer + `</result></root>`
 			writeToSocket(answer)
-			return
-		}
-		if (data.includes('<MatrixConnectionList/>')) {
-			console.log('responding to connection list')
-			writeToSocket(xmlConnectionList)
 			return
 		}
 	})

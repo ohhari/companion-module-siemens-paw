@@ -60,7 +60,7 @@ export default function (instance) {
 				if (event.options.cpu == 1) {
 					sel_cpu_label = instance.getVariableValue('requestedCPU')
 				}
-				instance.getCPUTypefromID(sel_cpu_id)
+				instance.getCPUTypefromID(sel_cpu_label)
 					.then((sel_cpu_type) => {
 						if (sel_cpu_label != '' && sel_console_label != '') {
 							instance.log('info','Pushing CPU ' + sel_cpu_label + ' to Console ' + sel_console_label + '...')

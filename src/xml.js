@@ -23,6 +23,10 @@ const xmlConnectionList = `<?xml version="1.0" encoding="UTF-8"?>
           <cpuName>CPU_A</cpuName>
           <consoleName>Console_A</consoleName>
         </item>
+		<item>
+			<cpuName>CPU_B</cpuName>
+			<consoleName>Console_B</consoleName>
+	  </item>
     </list>
 </root>`
 
