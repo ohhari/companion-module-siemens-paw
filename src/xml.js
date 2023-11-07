@@ -40,8 +40,8 @@ const xmlConsoleList = `
 
 const xmlCpuList = `
 <DviCpu>
-	<item><id>0x0000007D</id><cl>VtCpu</cl><type>RemoteTarget</type><name>CPU_A</name><poweredOn>true</poweredOn></item>
-	<item><id>0x00000082</id><cl>VtCpu</cl><type>RemoteTarget</type><name>CPU_B</name><poweredOn>true</poweredOn></item>
+	<item><id>0x00000082</id><cl>VtCpu</cl><type>RemoteTarget</type><name>CPU_A</name><poweredOn>true</poweredOn></item>
+	<item><id>0x0000007G</id><cl>VtCpu</cl><type>RemoteTarget</type><name>CPU_B</name><poweredOn>true</poweredOn></item>
 </DviCpu>`
 
 const xmlVtCpuList = `
@@ -60,8 +60,9 @@ const xmlMatrixList = `
 const xmlConnect = `<?xml version="1.0" encoding="utf-8"?>
 <root>
     <result type="connect">
-        Connection successfull
+		<commandStatus>Command &apos;connect&apos; succeeded.</commandStatus>
     </result>
 </root>`
+//<Warning>Could not connect console 00006266:00000201 to target 000347DD:00000401: User already connected</Warning>
 
 export { xml_get, xml_push, xmlConnectionList, xmlConsoleList, xmlCpuList, xmlVtCpuList, xmlMatrixList, xmlConnect }

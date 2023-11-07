@@ -13,9 +13,8 @@ class PAWInstance extends InstanceBase {
 	//Initiates the module
 	async init(config) {
 		this.config = config
-
 		this.consoles = { id: 0, label: 'no consoles loaded yet' }
-		this.cpus = { id: 0, label: 'no cpus loaded yet', type: 'none' }
+		this.cpus = { id: 1, label: 'no cpus loaded yet', type: 'none' }
 
 		this.updateStatus(InstanceStatus.Connecting)
 		this.log('info', 'Initiate startup...')
@@ -65,12 +64,50 @@ class PAWInstance extends InstanceBase {
 		this.setVariableValues({ [variableIdent]: variableValue })
 	}
 
-	getConsolefromID () {
-
+	//Returns the device name for a device ID
+	async getDeviceNamefromID (id) {
+		return new Promise((resolve, reject) => {
+			for (let device of this.consoles) {
+				if (id == device.id) {
+					resolve(device.label)
+				}
+			}
+			for (let device of this.cpus) {
+				if (id == device.id) {
+					resolve(device.label)
+				}
+			}
+			reject('Device ID not found')
+		})
 	}
 
-	getCPUfromID () {
+	//Returns the device type for a device ID
+	async getCPUTypefromID (id) {
+		return new Promise((resolve, reject) => {
+			for (let device of this.cpus) {
+				if (id == device.id) {
+					resolve(device.type)
+				}
+			}
+			reject('Device ID not found')
+		})
+	}
 
+	//Returns the device ID for a device name
+	async getDeviceIDfromName (label) {
+		return new Promise((resolve, reject) => {
+			for (let console of this.consoles) {
+				if (label == console.label) {
+					resolve(console.id)
+				}
+			}
+			for (let cpu of this.cpus) {
+				if (label == cpu.label) {
+					resolve(cpu.id)
+				}
+			}
+			reject('Device name not found')
+		})
 	}
 
 	//Sets the config fields
@@ -78,7 +115,7 @@ class PAWInstance extends InstanceBase {
 		this.config = config
 	}
 
-	//Sends xml-command to configured server and returns answer
+	//Sends xml command to configured server and returns answer
 	async sendAction(xml) {
 		return new Promise((resolve, reject) => {
 			let client = new Socket()
@@ -191,7 +228,7 @@ class PAWInstance extends InstanceBase {
 	}
 
 	//Gets devices from matrix and compares them to devices from the config list
-	async checkConfig(saved_data, connected_data) {
+	checkConfig(saved_data, connected_data) {
 		this.log('debug', 'Compare connected Devices to config...')
 		//this.log('debug', 'Connected Devices:')
 		let connected_consoles = []
@@ -215,39 +252,53 @@ class PAWInstance extends InstanceBase {
 		}
 		for (let connected_console of connected_consoles) {
 			let a = 0
+			let b = 0
 			for (let saved_console of saved_data.consoles) {
 				if ((connected_console.label == saved_console.label) && (connected_console.id == saved_console.id)) {
-					this.log('debug', 'Console already registered, ID: ' + saved_console.id + ', Name: ' + saved_console.label)
+					this.log('debug', 'Console already registered, ID: ' + connected_console.id + ', name: ' + connected_console.label)
 					a = 1
+					break
 				} else if (connected_console.label == saved_console.label) {
-					this.log('info', 'Console name already registered, ID: ' + saved_console.id + ', Name: ' + saved_console.label)
+					this.log('warn', 'Console name already registered, ID: ' + connected_console.id + ', name: ' + connected_console.label + ', old ID: ' + saved_console.id)
+					saved_data.consoles[b]={ id : connected_console.id, label : connected_console.label }
 					a = 1
+					break
 				} else if (connected_console.id == saved_console.id) {
-					this.log('info', 'Console ID already registered, ID: ' + saved_console.id + ', Name: ' + saved_console.label)
+					this.log('warn', 'Console ID already registered, ID: ' + connected_console.id + ', name: ' + connected_console.label + ', old name: ' + saved_console.label)
+					saved_data.consoles[b]={ id : connected_console.id, label : connected_console.label }
 					a = 1
+					break
 				}
+				b = b + 1
 			}
 			if (a == 0) {
-				this.log('info', 'New Console. ID: ' + connected_console.id + ', Name: ' + connected_console.label)
+				this.log('info', 'New Console. ID: ' + connected_console.id + ', name: ' + connected_console.label)
 				saved_data.consoles.push({ id : connected_console.id, label : connected_console.label })
 			}
 		}
 		for (let connected_cpu of connected_cpus) {
 			let a = 0
+			let b = 0
 			for (let saved_cpu of saved_data.cpus) {
 				if ((connected_cpu.label == saved_cpu.label) && (connected_cpu.id == saved_cpu.id)) {
-					this.log('debug', 'CPU already registered, ID: ' + saved_cpu.id + ', Name: ' + saved_cpu.label)
+					this.log('debug', 'CPU already registered, ID: ' + connected_cpu.id + ', name: ' + connected_cpu.label)
 					a = 1
+					break
 				} else if (connected_cpu.label == saved_cpu.label) {
-					this.log('info', 'CPU name already registered, ID: ' + saved_cpu.id + ', Name: ' + saved_cpu.label)
+					this.log('warn', 'CPU name already registered, ID: ' + connected_cpu.id + ', name: ' + connected_cpu.label + ', old ID: ' + saved_cpu.id)
+					saved_data.cpus[b]={ id : connected_cpu.id, label : connected_cpu.label, type : connected_cpu.type }
 					a = 1
+					break
 				} else if (connected_cpu.id == saved_cpu.id) {
-					this.log('info', 'CPU ID already registered, ID: ' + saved_cpu.id + ', Name: ' + saved_cpu.label)
+					this.log('warn', 'CPU ID already registered, ID: ' + connected_cpu.id + ', name: ' + connected_cpu.label + ', old name: ' + saved_cpu.label)
+					saved_data.cpus[b]={ id : connected_cpu.id, label : connected_cpu.label, type : connected_cpu.type }
 					a = 1
+					break
 				}
+				b = b + 1 
 			}
 			if (a == 0) {
-				this.log('info', 'New CPU. ID: ' + connected_cpu.id + ', Name: ' + connected_cpu.label)
+				this.log('info', 'New CPU. ID: ' + connected_cpu.id + ', name: ' + connected_cpu.label)
 				saved_data.cpus.push({ id : connected_cpu.id, label : connected_cpu.label, type : connected_cpu.type })
 			}
 		}
