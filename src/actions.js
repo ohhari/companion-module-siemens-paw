@@ -2,6 +2,7 @@ import { xml_get, xml_push } from './xml.js'
 
 export default function (instance) {
 	return {
+		//Action to push a cpu to a console
 		pushCPUtoConsole: {
 			name: 'Push CPU to Console',
 			options: [
@@ -105,6 +106,7 @@ export default function (instance) {
 				}
 			},
 		},
+		//Action that writes a cpu to the variable "selectedCPU"
 		selectCPU: {
 			name: 'Select CPU',
 			options: [
@@ -136,6 +138,7 @@ export default function (instance) {
 				instance.setVariable('selectedCPU', event.options.cpu)
 			},
 		},
+		//Action that request a cpu from a console and writes it to the variable "requestedCPU"
 		requestCPUfromConsole: {
 			name: 'Request CPU from Console',
 			options: [

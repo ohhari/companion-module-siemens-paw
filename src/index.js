@@ -10,6 +10,7 @@ class PAWInstance extends InstanceBase {
 		super(internal)
 	}
 
+	//Initiates the module
 	async init(config) {
 		this.config = config
 
@@ -41,20 +42,25 @@ class PAWInstance extends InstanceBase {
 				this.updateStatus(InstanceStatus.ConnectionFailure)
 			})
 	}
+
+	//Destroys object
 	async destroy() {
 		this.log('debug', 'destroy')
 	}
 
+	//Updates the available actions
 	updateActions() {
 		this.log('debug', 'Updating actions...')
 		this.setActionDefinitions(getActions(this))
 	}
 
+	//Updates the available variables
 	updateVariables() {
 		this.log('debug', 'Updating variables...')
 		this.setVariableDefinitions(getVariables(this))
 	}
 
+	//Sets the value of a variable
 	setVariable(variableIdent, variableValue) {
 		this.setVariableValues({ [variableIdent]: variableValue })
 	}
@@ -67,10 +73,12 @@ class PAWInstance extends InstanceBase {
 
 	}
 
+	//Sets the config fields
 	async configUpdated(config) {
 		this.config = config
 	}
 
+	//Sends xml-command to configured server and returns answer
 	async sendAction(xml) {
 		return new Promise((resolve, reject) => {
 			let client = new Socket()
@@ -110,6 +118,7 @@ class PAWInstance extends InstanceBase {
 		})
 	}
 
+	//Configuration of the config fields
 	getConfigFields() {
 		this.log('debug', 'Getting config fields...')
 		return [
@@ -136,6 +145,7 @@ class PAWInstance extends InstanceBase {
 		]
 	}
 
+	//Checks connection to the matrix and returns connected devices
 	async checkMatrix() {
 		return new Promise((resolve, reject) => {
 			this.log('debug', 'Checking connection to Matrix...')
@@ -156,6 +166,7 @@ class PAWInstance extends InstanceBase {
 		})
 	}
 
+	//Loads devices from config file
 	async loadConfig() {
 		return new Promise((resolve, reject) => {
 			this.log('info', 'Loading config file...')
@@ -179,6 +190,7 @@ class PAWInstance extends InstanceBase {
 		})
 	}
 
+	//Gets devices from matrix and compares them to devices from the config list
 	async checkConfig(saved_data, connected_data) {
 		this.log('debug', 'Compare connected Devices to config...')
 		//this.log('debug', 'Connected Devices:')
