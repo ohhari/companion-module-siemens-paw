@@ -71,8 +71,8 @@ const xmlMatrixList = `
 
 const xmlConnect = `<?xml version="1.0" encoding="utf-8"?>
 <root>
-    <result type="connect">
-		<commandStatus>Command &apos;connect&apos; succeeded.</commandStatus>
+    <result type="cmd">
+		<commandStatus>Command &apos;cmd&apos; succeeded.</commandStatus>
     </result>
 </root>`
 //<Warning>Could not connect console 00006266:00000201 to target 000347DD:00000401: User already connected</Warning>

@@ -4,9 +4,12 @@ import getVariables from './variables.js'
 import { xml_get } from './xml.js'
 import { Socket } from 'net'
 
+let reload
+
 class PAWInstance extends InstanceBase {
 	constructor(internal) {
 		super(internal)
+		this.reload = 0
 	}
 
 	//Initiates the module
@@ -75,52 +78,71 @@ class PAWInstance extends InstanceBase {
 		this.config = config
 	}
 
-	//Sends xml command to configured server and returns answer
-	async sendAction(xml, timeout = 500, retry = 3) {
-		return new Promise((resolve, reject) => {
-			//var connectToServer = function(attempts) {
-				let client = new Socket()
-				let answer = ''		
-				client.connect(this.config.matrix_port, this.config.matrix_ip, async () => {
-					this.log('debug', 'Connect to Server...')
-					client.write(xml)
-					//this.log('debug', 'Send: ' + xml)
-				})
-
-				client.on('data', async (data) => {
-					data = decodeURIComponent(data.toString())
-					//this.log('debug', 'Received: ' + data.length + ' bytes\n' + data)
-					answer = answer + data
-				})
-
-				client.on('close', async () => {
-					client.destroy()
-					this.log('debug', 'Connection to Server closed...')
-				})
-
-				client.on('error', async () => {
-					client.destroy()
-					reject('Connection error')
-					this.log('debug', 'Connection to Server closed...')
-				})
-
-				setTimeout(() => {
-					if (answer != '') {
-						resolve(answer)
+	//Schedules multiple server requests until timeout
+	async sendAction(xml, timeout = 500, retry = 4) {
+		return new Promise(async (resolve, reject) => {
+			for (let i = retry; i >= 1; i--) {
+				try {
+					const answer = await this.connectToServer(xml, timeout)
+					resolve(answer)
+					this.reload = 0
+					break	
+				} catch(error) {
+					if (i == 1)  {
+						this.updateStatus(InstanceStatus.ConnectionFailure)	
+						reject(error)
+						setTimeout(() => {
+							if (this.reload <= 5) {
+								this.log('warn', 'Reinit...' + this.reload)
+								this.init(this.config)
+								this.reload++
+							} else {
+								this.log('error', 'Please restart module!')
+							}
+						}, 2000)	
 					} else {
-						reject('No answer from server')						
+						this.log('warn', 'Retry...')
 					}
-                	/*} else if (attempts == 0)  {
-                    	reject('No answer from server')
-                	} else {
-						this.log('debug', 'Retry...')
-                    	setTimeout(function() {
-                        	connectToServer(attempts - 1);
-                    	}, 100);
-                	}*/
-				}, timeout)
-			//}
-			//connectToServer(retry);
+				} 			
+			}
+		})
+	}
+
+	//Sends xml command to configured server and returns answer
+	async connectToServer(xml, timeout) {
+		return new Promise((resolve, reject) => {
+			let client = new Socket()
+			let answer = ''		
+			client.connect(this.config.matrix_port, this.config.matrix_ip, async () => {
+				this.log('debug', 'Connect to Server...')
+				client.write(xml)
+				//this.log('debug', 'Send: ' + xml)
+			})
+
+			client.on('data', async (data) => {
+				data = decodeURIComponent(data.toString())
+				//this.log('debug', 'Received: ' + data.length + ' bytes\n' + data)
+				answer = answer + data
+			})
+
+			client.on('close', async () => {
+				client.destroy()
+				this.log('debug', 'Connection to Server closed...')
+			})
+
+			client.on('error', async () => {
+				client.destroy()
+				reject('Connection error')
+				this.log('debug', 'Connection to Server closed...')
+			})
+
+			setTimeout(() => {
+				if (answer != '') {
+					resolve(answer)
+				} else {
+					reject('No answer from server')						
+				}
+			}, timeout)
 		})
 	}
 

@@ -20,7 +20,12 @@ createServer((socket) => {
 		}
 		if (data.includes('<connect>')) {
 			console.log('responding to connect')
-			writeToSocket(xmlConnect)
+			writeToSocket(xmlConnect.replace('cmd','connect').replace('cmd','connect'))
+			return
+		}
+		if (data.includes('<executeScriptlet>')) {
+			console.log('responding to executeScriptlet')
+			writeToSocket(xmlConnect.replace('cmd','executeScriptlet').replace('cmd','executeScriptlet'))
 			return
 		}
 		if (data.includes('<list>')) {
