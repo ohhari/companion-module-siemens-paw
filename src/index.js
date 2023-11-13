@@ -76,41 +76,51 @@ class PAWInstance extends InstanceBase {
 	}
 
 	//Sends xml command to configured server and returns answer
-	async sendAction(xml, timeout = 500) {
+	async sendAction(xml, timeout = 500, retry = 3) {
 		return new Promise((resolve, reject) => {
-			let client = new Socket()
-			let answer = ''
+			//var connectToServer = function(attempts) {
+				let client = new Socket()
+				let answer = ''		
+				client.connect(this.config.matrix_port, this.config.matrix_ip, async () => {
+					this.log('debug', 'Connect to Server...')
+					client.write(xml)
+					//this.log('debug', 'Send: ' + xml)
+				})
 
-			client.connect(this.config.matrix_port, this.config.matrix_ip, async () => {
-				this.log('debug', 'Connect to Server...')
-				client.write(xml)
-				//this.log('debug', 'Send: ' + xml)
-			})
+				client.on('data', async (data) => {
+					data = decodeURIComponent(data.toString())
+					//this.log('debug', 'Received: ' + data.length + ' bytes\n' + data)
+					answer = answer + data
+				})
 
-			client.on('data', async (data) => {
-				data = decodeURIComponent(data.toString())
-				//this.log('debug', 'Received: ' + data.length + ' bytes\n' + data)
-				answer = answer + data
-			})
+				client.on('close', async () => {
+					client.destroy()
+					this.log('debug', 'Connection to Server closed...')
+				})
 
-			client.on('close', async () => {
-				client.destroy()
-				this.log('debug', 'Connection to Server closed...')
-			})
+				client.on('error', async () => {
+					client.destroy()
+					reject('Connection error')
+					this.log('debug', 'Connection to Server closed...')
+				})
 
-			client.on('error', async () => {
-				client.destroy()
-				reject('Connection error')
-				this.log('debug', 'Connection to Server closed...')
-			})
-
-			setTimeout(() => {
-				if (answer == '') {
-					reject('No answer from server')
-				} else {
-					resolve(answer)
-				}
-			}, timeout)
+				setTimeout(() => {
+					if (answer != '') {
+						resolve(answer)
+					} else {
+						reject('No answer from server')						
+					}
+                	/*} else if (attempts == 0)  {
+                    	reject('No answer from server')
+                	} else {
+						this.log('debug', 'Retry...')
+                    	setTimeout(function() {
+                        	connectToServer(attempts - 1);
+                    	}, 100);
+                	}*/
+				}, timeout)
+			//}
+			//connectToServer(retry);
 		})
 	}
 
