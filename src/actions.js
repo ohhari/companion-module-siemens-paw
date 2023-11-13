@@ -1,4 +1,4 @@
-import { xml_get, xml_push } from './xml.js'
+import { xml_get, xml_push, xml_script } from './xml.js'
 
 export default function (instance) {
 	return {
@@ -18,10 +18,10 @@ export default function (instance) {
 							label: instance.cpus[key].label,
 						}))
 						.sort((a, b) => {
-							if (a.label < b.label) {
+							if (a.id < b.id) {
 								return -1
 							}
-							if (a.label > b.label) {
+							if (a.id > b.id) {
 								return 1
 							}
 							return 0
@@ -40,10 +40,10 @@ export default function (instance) {
 							label: instance.consoles[key].label,
 						}))
 						.sort((a, b) => {
-							if (a.label < b.label) {
+							if (a.id < b.id) {
 								return -1
 							}
-							if (a.label > b.label) {
+							if (a.id > b.id) {
 								return 1
 							}
 							return 0
@@ -70,7 +70,7 @@ export default function (instance) {
 							}	
 							instance.sendAction(xml)
 								.then((answer) => {
-									answer = answer.replace('&apos;', `'`).split('<result type="connect">')[1].split('</result>')[0]
+									answer = answer.split('<result type="connect">')[1].split('</result>')[0].replace('&apos;', `'`).replace('&apos;', `'`)
 									if (answer.includes('<Warning>')) {
 										instance.log('warn', answer.replace('<Warning>', '').replace('</Warning>', ''))
 									} else if (answer.includes('<Error>')) {
@@ -107,10 +107,10 @@ export default function (instance) {
 							label: instance.cpus[key].label,
 						}))
 						.sort((a, b) => {
-							if (a.label < b.label) {
+							if (a.id < b.id) {
 								return -1
 							}
-							if (a.label > b.label) {
+							if (a.id > b.id) {
 								return 1
 							}
 							return 0
@@ -139,10 +139,10 @@ export default function (instance) {
 							label: instance.consoles[key].label,
 						}))
 						.sort((a, b) => {
-							if (a.label < b.label) {
+							if (a.id < b.id) {
 								return -1
 							}
-							if (a.label > b.label) {
+							if (a.id > b.id) {
 								return 1
 							}
 							return 0
@@ -176,6 +176,58 @@ export default function (instance) {
 					})
 					.catch((err) => {
 						instance.log('error', 'Error while requesting CPU from Console: ' + err.toString())
+					})
+			},
+		},
+		//Action to push a cpu to a console
+		executeScriptlet: {
+			name: 'Execute Scriptlet',
+			options: [
+				{				
+					type: 'textinput',
+					label: 'Execute Scriptlet',
+					id: 'scriptlet',
+					default: '',
+					tooltip: 'Select Scriptlet',
+				},
+				{
+					type: 'dropdown',
+					label: 'on Console',
+					id: 'console',
+					default: '0',
+					tooltip: 'Select Console',
+					choices: Object.keys(instance.consoles)
+						.map((key) => ({
+							id: instance.consoles[key].id,
+							label: instance.consoles[key].label,
+						}))
+						.sort((a, b) => {
+							if (a.id < b.id) {
+								return -1
+							}
+							if (a.id > b.id) {
+								return 1
+							}
+							return 0
+						}),
+					minChoicesForSearch: 5,
+				},
+			],
+			callback: async (event) => {
+				//instance.log('debug', xml_script.replace('target_console', event.options.console).replace('scriptlet', event.options.scriptlet))
+				instance.sendAction(xml_script.replace('target_console', event.options.console).replace('scriptlet', event.options.scriptlet))
+					.then((answer) => {
+						answer = answer.split('<result type="executeScriptlet">')[1].split('</result>')[0]
+						if (answer.includes('<Warning>')) {
+							instance.log('warn', answer.replace('<Warning>', '').replace('</Warning>', ''))
+						} else if (answer.includes('<Error>')) {
+							instance.log('error', answer.replace('<Error>', '').replace('</Error>', ''))
+						} else {
+							instance.log('info', answer.replace('<commandStatus>', '').replace('</commandStatus>', '').replace('&apos;', `'`).replace('&apos;', `'`))
+						}
+					})
+					.catch((err) => {
+						instance.log('error', 'Error while executing scriptlet on Console: ' + err.toString())
 					})
 			},
 		},

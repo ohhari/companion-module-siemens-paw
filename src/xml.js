@@ -6,6 +6,14 @@ const xml_get = `<?xml version="1.0" encoding="UTF-8"?>
 	</list>
 </root>`
 
+const xml_script = `<?xml version="1.0" encoding="UTF-8"?>
+<root>
+	<executeScriptlet>
+		<DviConsole type="name">target_console</DviConsole>
+		<Name>scriptlet</Name>
+	</executeScriptlet>
+</root>`
+
 const xml_push = `<?xml version="1.0" encoding="UTF-8"?>
 <root>
 	<connect>
@@ -69,4 +77,4 @@ const xmlConnect = `<?xml version="1.0" encoding="utf-8"?>
 </root>`
 //<Warning>Could not connect console 00006266:00000201 to target 000347DD:00000401: User already connected</Warning>
 
-export { xml_get, xml_push, xmlConnectionList, xmlConsoleList, xmlCpuList, xmlVtCpuList, xmlMatrixList, xmlConnect }
+export { xml_get, xml_push, xml_script, xmlConnectionList, xmlConsoleList, xmlCpuList, xmlVtCpuList, xmlMatrixList, xmlConnect }
