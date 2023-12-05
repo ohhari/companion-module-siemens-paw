@@ -79,7 +79,7 @@ class PAWInstance extends InstanceBase {
 	}
 
 	//Schedules multiple server requests until timeout
-	async sendAction(xml, timeout = 500, retry = 4) {
+	async sendAction(xml, timeout = 750, retry = 4) {
 		return new Promise(async (resolve, reject) => {
 			for (let i = retry; i >= 1; i--) {
 				try {
@@ -92,7 +92,7 @@ class PAWInstance extends InstanceBase {
 						this.updateStatus(InstanceStatus.ConnectionFailure)	
 						reject(error)
 						setTimeout(() => {
-							if (this.reload <= 5) {
+							if (this.reload <= 4) {
 								this.log('warn', 'Reinit...' + this.reload)
 								this.init(this.config)
 								this.reload++
@@ -137,6 +137,7 @@ class PAWInstance extends InstanceBase {
 			})
 
 			setTimeout(() => {
+				client.end()
 				if (answer != '') {
 					resolve(answer)
 				} else {
