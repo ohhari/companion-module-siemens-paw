@@ -172,10 +172,10 @@ class PAWInstance extends InstanceBase {
 	async checkMatrix() {
 		return new Promise((resolve, reject) => {
 			this.log('debug', 'Checking connection to Matrix...')
-			this.sendAction(xml_get.replace('target', '<DviMatrixSwitch/><DviConsole/><DviCpu/><VtCpu/>'))
+			this.sendAction(xml_get.replace('target', '<IpMatrixSwitch/><IpConsole/><IpCpu/><VtCpu/>'))
 				.then((answer) => {					
-					if (answer.split('<DviMatrixSwitch>')[1].split('<DviMatrixSwitch>')[0].split('<name>')[1].split('</name>')[0] != '') {
-						this.log('info', 'Connected to Matrix ' + answer.split('<DviMatrixSwitch>')[1].split('</DviMatrixSwitch>')[0].split('<name>')[1].split('</name>')[0])
+					if (answer.split('<IpMatrixSwitch>')[1].split('<IpMatrixSwitch>')[0].split('<name>')[1].split('</name>')[0] != '') {
+						this.log('info', 'Connected to Matrix ' + answer.split('<IpMatrixSwitch>')[1].split('</IpMatrixSwitch>')[0].split('<name>')[1].split('</name>')[0])
 						resolve(answer)
 					} else {
 						this.log('error', 'Error while checking matrix: No valid matrix name')
@@ -199,9 +199,9 @@ class PAWInstance extends InstanceBase {
 				let device_type = item.split('<cl>')[1].split('</cl>')[0]
 				let device_id = item.split('<id>')[1].split('</id>')[0]
 				let device_label = item.split('<name>')[1].split('</name>')[0]
-				if (device_type == 'DviConsole') {
+				if (device_type == 'IpConsole') {
 					connected_consoles.push({ id : device_label, snr : device_id, label : device_label })
-				} else if (device_type == 'DviCpu') {
+				} else if (device_type == 'IpCpu') {
 					connected_cpus.push({ id : device_label, snr : device_id, label : device_label, type : 'Dvi' })
 				} else if (device_type == 'VtCpu') {
 					connected_cpus.push({ id : device_label, snr : device_id, label : device_label, type : 'Vt' })
@@ -211,8 +211,8 @@ class PAWInstance extends InstanceBase {
 				this.log('debug', 'New device detected. Type: ' + device_type + ', ID: ' + device_id + ', Name: ' + device_label)
 			}
 		}
-		connected_cpus.push({ id : 0, snr : "0", label : "-Selected CPU", type : "Dvi" })
-		connected_cpus.push({ id : 1, snr : "1", label : "-Requested CPU", type : "Dvi" })
+		connected_cpus.push({ id : 0, snr : "0", label : "-Selected CPU", type : "Ip" })
+		connected_cpus.push({ id : 1, snr : "1", label : "-Requested CPU", type : "Ip" })
 		this.consoles = connected_consoles
 		this.cpus = connected_cpus
 	}

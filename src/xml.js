@@ -9,7 +9,7 @@ const xml_get = `<?xml version="1.0" encoding="UTF-8"?>
 const xml_script = `<?xml version="1.0" encoding="UTF-8"?>
 <root>
 	<executeScriptlet>
-		<DviConsole type="name">target_console</DviConsole>
+		<IpConsole type="name">target_console</IpConsole>
 		<Name>scriptlet</Name>
 	</executeScriptlet>
 </root>`
@@ -17,8 +17,8 @@ const xml_script = `<?xml version="1.0" encoding="UTF-8"?>
 const xml_push = `<?xml version="1.0" encoding="UTF-8"?>
 <root>
 	<connect>
-		<DviConsole type="name">target_console</DviConsole>
-		<DviCpu type="name">target_cpu</DviCpu>
+		<IpConsole type="name">target_console</IpConsole>
+		<IpCpu type="name">target_cpu</IpCpu>
 		<CloseDialogs/>
 	</connect>
 </root>`
@@ -40,21 +40,21 @@ const xmlConnectionList = `<?xml version="1.0" encoding="UTF-8"?>
 
 const xmlConsoleList = `
 <DviConsole>
-	<item><id>0x0000000A</id><cl>DviConsole</cl><type>DVI-CON (2.0)</type><name>Console_A</name><ownerId>0x000004BC</ownerId>
-		<ownerCl>DviMatrix</ownerCl><ownerPort>4.6</ownerPort><ownerName>CCD DemoCenter</ownerName><enable>1</enable>
+	<item><id>0x0000000A</id><cl>IpConsole</cl><type>DVI-CON (2.0)</type><name>Console_A</name><ownerId>0x000004BC</ownerId>
+		<ownerCl>IpMatrix</ownerCl><ownerPort>4.6</ownerPort><ownerName>CCIP PAW</ownerName><enable>1</enable>
 		<poweredOn>false</poweredOn><transmission>1</transmission>
 	</item>
-	<item><id>0x0000000B</id><cl>DviConsole</cl><type>DVI-CON (2.0)</type><name>Console_B</name><ownerId>0x000004BC</ownerId>
-		<ownerCl>DviMatrix</ownerCl><ownerPort>4.6</ownerPort><ownerName>CCD DemoCenter</ownerName><enable>1</enable>
+	<item><id>0x0000000B</id><cl>IpConsole</cl><type>DVI-CON (2.0)</type><name>Console_B</name><ownerId>0x000004BC</ownerId>
+		<ownerCl>IpMatrix</ownerCl><ownerPort>4.6</ownerPort><ownerName>CCIP PAW</ownerName><enable>1</enable>
 		<poweredOn>false</poweredOn><transmission>1</transmission>
 	</item>
 </DviConsole>`
 
 const xmlCpuList = `
-<DviCpu>
+<IpCpu>
 	<item><id>0x00000082</id><cl>VtCpu</cl><type>RemoteTarget</type><name>CPU_A</name><poweredOn>true</poweredOn></item>
 	<item><id>0x0000007G</id><cl>VtCpu</cl><type>RemoteTarget</type><name>CPU_B</name><poweredOn>true</poweredOn></item>
-</DviCpu>`
+</IpCpu>`
 
 const xmlVtCpuList = `
 <VtCpu>
@@ -63,11 +63,11 @@ const xmlVtCpuList = `
 </VtCpu>`
 
 const xmlMatrixList = `
-<DviMatrixSwitch>
-	<item><id>0x00000001</id><cl>DviMatrix</cl><type>ControlCenter-Digital 160</type><name>CCD 160</name>
+<IpMatrixSwitch>
+	<item><id>0x00000001</id><cl>IpMatrix</cl><type>ControlCenter-IP 2.0</type><name>CCIP 2.0</name>
 	<poweredOn>true</poweredOn><pushGet>yes</pushGet><tradeSwitching>yes</tradeSwitching><ipSwitching>yes</ipSwitching>
 	<gridModeCapable>yes</gridModeCapable><matrixGuard>no</matrixGuard></item>
-</DviMatrixSwitch>`
+</IpMatrixSwitch>`
 
 const xmlConnect = `<?xml version="1.0" encoding="utf-8"?>
 <root>

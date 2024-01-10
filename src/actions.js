@@ -66,7 +66,7 @@ export default function (instance) {
 							instance.log('info','Pushing CPU ' + sel_cpu_label + ' to Console ' + sel_console_label + '...')
 							let xml = xml_push.replace('target_console', sel_console_label).replace('target_cpu', sel_cpu_label)
 							if (sel_cpu_type == 'Vt') {
-								xml = xml.replace('<DviCpu type="name">', '<VtCpu type="name">').replace('</DviCpu>', '</VtCpu>')
+								xml = xml.replace('<IpCpu type="name">', '<VtCpu type="name">').replace('</IpCpu>', '</VtCpu>')
 							}	
 							instance.sendAction(xml)
 								.then((answer) => {

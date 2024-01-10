@@ -31,13 +31,13 @@ createServer((socket) => {
 		if (data.includes('<list>')) {
 			console.log('responding to list')
 			let answer = `<?xml version="1.0" encoding="utf-8"?><root><result type="list">`
-			if (data.includes('<DviMatrixSwitch/>')) {
+			if (data.includes('<IpMatrixSwitch/>')) {
 				answer = answer + xmlMatrixList
 			}
-			if (data.includes('<DviConsole/>')) {
+			if (data.includes('<IpConsole/>')) {
 				answer = answer + xmlConsoleList
 			}	
-			if (data.includes('<DviCpu/>')) {
+			if (data.includes('<IpCpu/>')) {
 				answer = answer + xmlCpuList
 			}	
 			if (data.includes('<VtCpu/>')) {
